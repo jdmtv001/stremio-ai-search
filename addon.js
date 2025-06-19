@@ -2629,6 +2629,30 @@ function detectPlatform(extra = {}) {
 }
 
 function createDynamicErrorPoster(message, type) {
+  // Generate a short descriptive text based on message content
+  function generateErrorTitle(message, type) {
+    if (type === "no_results") return "NO RESULTS";
+
+    const messageHash = message.toLowerCase();
+    if (messageHash.includes("trakt")) return "TRAKT ERROR";
+    if (messageHash.includes("rpdb")) return "RPDB ERROR";
+    if (messageHash.includes("gemini")) return "GEMINI ERROR";
+    if (messageHash.includes("tmdb")) return "TMDB ERROR";
+    if (messageHash.includes("configuration") || messageHash.includes("config"))
+      return "CONFIG ERROR";
+    if (messageHash.includes("token") || messageHash.includes("auth"))
+      return "AUTH ERROR";
+    if (messageHash.includes("api key") || messageHash.includes("key"))
+      return "API KEY ERROR";
+    if (messageHash.includes("network") || messageHash.includes("connection"))
+      return "NETWORK ERROR";
+
+    // Default descriptions
+    if (type === "error") return "SERVICE ERROR";
+    if (type === "warning") return "SERVICE WARNING";
+    return "SYSTEM ERROR";
+  }
+
   // Helper function to wrap text within a specified width
   function wrapText(text, maxLength) {
     const words = text.split(" ");
@@ -2666,17 +2690,26 @@ function createDynamicErrorPoster(message, type) {
     title = "NO RESULTS";
   }
 
-  // Wrap the message text to fit the poster
-  const wrappedLines = wrapText(message, 28); // Adjust character limit as needed
-  const maxLines = 8; // Limit to prevent overflow
+  // Generate error title and create a brief summary
+  const errorTitle = generateErrorTitle(message, type);
+  const briefSummary =
+    type === "no_results"
+      ? "Not Found"
+      : message.length > 50
+      ? message.substring(0, 47) + "..."
+      : message;
+
+  // Wrap the brief summary
+  const wrappedLines = wrapText(briefSummary, 20);
+  const maxLines = 3; // Limit to fewer lines
   const displayLines = wrappedLines.slice(0, maxLines);
   if (wrappedLines.length > maxLines) {
     displayLines[maxLines - 1] += "...";
   }
 
   // Calculate text positioning
-  const lineHeight = 32;
-  const startY = 280;
+  const lineHeight = 24;
+  const startY = 380;
 
   return `<svg width="500" height="750" xmlns="http://www.w3.org/2000/svg">
     <defs>
@@ -2685,7 +2718,7 @@ function createDynamicErrorPoster(message, type) {
         <stop offset="100%" style="stop-color:#1a1a1a;stop-opacity:1" />
       </linearGradient>
       <filter id="glow">
-        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+        <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
         <feMerge> 
           <feMergeNode in="coloredBlur"/>
           <feMergeNode in="SourceGraphic"/>
@@ -2697,35 +2730,39 @@ function createDynamicErrorPoster(message, type) {
     <rect width="500" height="750" fill="url(#bgGradient)" stroke="#444" stroke-width="2"/>
     
     <!-- Icon Background Circle -->
-    <circle cx="250" cy="120" r="45" fill="${primaryColor}" opacity="0.15"/>
+    <circle cx="250" cy="120" r="55" fill="${primaryColor}" opacity="0.15"/>
     
     <!-- Icon -->
-    <text x="250" y="140" font-family="Arial, sans-serif" font-size="48" font-weight="bold" 
+    <text x="250" y="145" font-family="Arial, sans-serif" font-size="56" font-weight="bold" 
           fill="${iconColor}" text-anchor="middle" filter="url(#glow)">${iconSymbol}</text>
     
     <!-- Title -->
-    <text x="250" y="190" font-family="Arial, sans-serif" font-size="24" font-weight="bold" 
+    <text x="250" y="200" font-family="Arial, sans-serif" font-size="28" font-weight="bold" 
           fill="${primaryColor}" text-anchor="middle">${title}</text>
     
-    <!-- Main Error Message -->
+    <!-- Large Error Title -->
+    <text x="250" y="300" font-family="Arial, sans-serif" font-size="36" font-weight="bold" 
+          fill="${primaryColor}" text-anchor="middle" filter="url(#glow)">${errorTitle}</text>
+    
+    <!-- Brief Summary -->
     ${displayLines
       .map(
         (line, index) =>
           `<text x="250" y="${
             startY + index * lineHeight
-          }" font-family="Arial, sans-serif" font-size="20" 
-             font-weight="500" fill="#ffffff" text-anchor="middle">${line}</text>`
+          }" font-family="Arial, sans-serif" font-size="18" 
+             font-weight="400" fill="#cccccc" text-anchor="middle">${line}</text>`
       )
       .join("")}
     
     <!-- Click for Details Text -->
     <text x="250" y="${
-      startY + displayLines.length * lineHeight + 50
+      startY + displayLines.length * lineHeight + 60
     }" font-family="Arial, sans-serif" 
-          font-size="14" fill="#cccccc" text-anchor="middle">Click here for details</text>
+          font-size="16" font-weight="500" fill="#ffffff" text-anchor="middle">Click here for details</text>
     
     <!-- Decorative Bottom Line -->
-    <line x1="50" y1="680" x2="450" y2="680" stroke="${primaryColor}" stroke-width="2" opacity="0.5"/>
+    <line x1="50" y1="680" x2="450" y2="680" stroke="${primaryColor}" stroke-width="3" opacity="0.7"/>
   </svg>`;
 }
 
@@ -3023,7 +3060,7 @@ const catalogHandler = async function (args, req) {
     // If the intent is specific (not ambiguous) and doesn't match the requested type,
     // return empty results regardless of whether it's a recommendation or search
     if (intent !== "ambiguous" && intent !== type) {
-      logger.debug("Intent mismatch - returning empty results", {
+      logger.debug("Intent mismatch - returning empty results (suppressed)", {
         intent,
         type,
         searchQuery,
@@ -3031,10 +3068,8 @@ const catalogHandler = async function (args, req) {
           isRecommendationQuery(searchQuery) ? "recommendation" : "search"
         } appears to be for ${intent}, not ${type}`,
       });
-      const platform = detectPlatform(extra);
-      return {
-        metas: [createNoResultsCatalogEntry(searchQuery, platform, type)],
-      };
+      // Return completely empty results when catalog type is intentionally suppressed
+      return { metas: [] };
     }
 
     let exactMatchMeta = null;
