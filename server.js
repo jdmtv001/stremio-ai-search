@@ -630,7 +630,7 @@ app.get('/configure', (req, res) => {
                                     <br />
                                     <code className="bg-blue-300 p-2 rounded block mt-2 text-blue-900 select-all cursor-pointer"
                                           onClick={handleCopyUrl}>
-                                        {displayAddonUrl}
+                                        {addonUrl || `${getBaseUrl()}/manifest.json`}
                                     </code>
                                 </p>
                                 {/* Button to copy the URL */}
