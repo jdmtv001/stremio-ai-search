@@ -309,10 +309,11 @@ app.get('/get-config', async (req, res) => {
 app.get('/configure', (req, res) => {
     // These variables are provided by the Canvas environment.
     const firebaseConfigJson = typeof process.env.__firebase_config !== 'undefined' ? JSON.stringify(JSON.parse(process.env.__firebase_config)) : '{}';
-    const initialAuthToken = typeof process.env.__initial_auth_token !== 'undefined' ? `'${process.env.__initial_auth_token}'` : 'undefined';
+    const initialAuthToken = typeof process.env.__initial_auth_token !== 'undefined' ? process.env.__initial_auth_token : undefined; // Get raw token
     const currentAppId = process.env.__app_id || 'default-addon-id'; // Pass appId to frontend
 
-    res.send(`
+    // Construct the HTML content using placeholders for dynamic values
+    let htmlContent = `
         <!DOCTYPE html>
         <html lang="en">
         <head>
@@ -396,7 +397,7 @@ app.get('/configure', (req, res) => {
                 import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
                 // Initialize Firebase App with config provided by the environment
-                const firebaseConfig = ${firebaseConfigJson};
+                const firebaseConfig = __FIREBASE_CONFIG_PLACEHOLDER__;
                 window.firebaseApp = initializeApp(firebaseConfig);
                 window.firebaseAuth = getAuth(window.firebaseApp);
                 window.firebaseDb = getFirestore(window.firebaseApp);
@@ -404,7 +405,7 @@ app.get('/configure', (req, res) => {
                 // Authenticate Firebase user for client-side functionality
                 async function authenticateFirebase() {
                     try {
-                        const token = ${initialAuthToken};
+                        const token = __INITIAL_AUTH_TOKEN_PLACEHOLDER__;
                         if (token && token !== 'undefined') {
                             await signInWithCustomToken(window.firebaseAuth, token);
                             console.log('Firebase: Client-side signed in with custom token.');
@@ -433,7 +434,7 @@ app.get('/configure', (req, res) => {
         <body class="p-6">
             <!-- Global JS variable for appId to be used by React component -->
             <script>
-                window.appIdFromBackend = ${JSON.stringify(currentAppId)}; // This is where appId is correctly injected
+                window.appIdFromBackend = '__APP_ID_PLACEHOLDER__';
             </script>
             <div id="root" class="container mx-auto p-6 bg-blue-200 rounded-lg shadow-xl mt-10"></div>
 
@@ -680,7 +681,14 @@ app.get('/configure', (req, res) => {
             </script>
         </body>
         </html>
-    `);
+    `;
+
+    // Perform replacements after defining the HTML string
+    htmlContent = htmlContent.replace('__FIREBASE_CONFIG_PLACEHOLDER__', firebaseConfigJson);
+    htmlContent = htmlContent.replace('__INITIAL_AUTH_TOKEN_PLACEHOLDER__', JSON.stringify(initialAuthToken)); // Safely stringify token
+    htmlContent = htmlContent.replace('__APP_ID_PLACEHOLDER__', JSON.stringify(currentAppId)); // Safely stringify appId
+
+    res.send(htmlContent);
 });
 
 // --- Start the Express Server ---
