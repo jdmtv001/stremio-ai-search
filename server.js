@@ -431,6 +431,10 @@ app.get('/configure', (req, res) => {
             </script>
         </head>
         <body class="p-6">
+            <!-- Global JS variable for appId to be used by React component -->
+            <script>
+                window.appIdFromBackend = '${currentAppId}'; // This is where appId is correctly injected
+            </script>
             <div id="root" class="container mx-auto p-6 bg-blue-200 rounded-lg shadow-xl mt-10"></div>
 
             <script type="text/babel">
@@ -447,8 +451,8 @@ app.get('/configure', (req, res) => {
                     const [message, setMessage] = useState('');
                     const [error, setError] = useState('');
 
-                    // Get the unique app ID from the server-side passed variable
-                    const appId = "${appId}";
+                    // Get the unique app ID from the global variable (safely injected)
+                    const appId = window.appIdFromBackend; // Corrected access
 
                     // Effect hook to run once on component mount for initial setup and URL parameter parsing
                     useEffect(() => {
