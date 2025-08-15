@@ -433,7 +433,7 @@ app.get('/configure', (req, res) => {
         <body class="p-6">
             <!-- Global JS variable for appId to be used by React component -->
             <script>
-                window.appIdFromBackend = '${currentAppId}'; // This is where appId is correctly injected
+                window.appIdFromBackend = ${JSON.stringify(currentAppId)}; // This is where appId is correctly injected
             </script>
             <div id="root" class="container mx-auto p-6 bg-blue-200 rounded-lg shadow-xl mt-10"></div>
 
