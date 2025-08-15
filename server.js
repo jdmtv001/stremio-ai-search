@@ -320,14 +320,10 @@ app.get('/configure', (req, res) => {
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Stremio Gemini Addon Configuration</title>
-            <!-- Load React and ReactDOM from CDN -->
             <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
             <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-            <!-- Load Babel for JSX transformation in the browser -->
             <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-            <!-- Load Tailwind CSS from CDN -->
             <script src="https://cdn.tailwindcss.com"></script>
-            <!-- Load Inter font from Google Fonts -->
             <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
             <style>
                 /* Custom styles for the configuration page, enhancing Tailwind defaults */
@@ -389,7 +385,6 @@ app.get('/configure', (req, res) => {
                     color: white;
                 }
             </style>
-            <!-- Firebase SDKs for client-side functionality -->
             <script type="module">
                 // Import necessary Firebase modules from CDN
                 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -432,7 +427,6 @@ app.get('/configure', (req, res) => {
             </script>
         </head>
         <body class="p-6">
-            <!-- Global JS variable for appId to be used by React component -->
             <script>
                 window.appIdFromBackend = '__APP_ID_PLACEHOLDER__';
             </script>
