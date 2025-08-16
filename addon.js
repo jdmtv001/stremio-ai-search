@@ -1,4 +1,3 @@
-// addon.js
 const { addonBuilder } = require('stremio-addon-sdk');
 const fetch = require('node-fetch');
 
@@ -63,7 +62,7 @@ async function catalogHandler({ type, extra, search }, { stremioConfig }) {
     if (genreId) {
       metas = await discoverTypeAndGenres(type, genreId, tmdbApiKey);
     } else {
-      metas = []; // Fallback for unsupported queries
+      metas = [];
       console.log('No genre provided or genre not found in map.');
     }
 
@@ -115,7 +114,7 @@ async function discoverTypeAndGenres(type, genreId, tmdbApiKey) {
 
     tmdbDiscoverCache.set(cacheKey, metas);
     console.log(`Cached TMDB results for ${cacheKey}`);
-    return metas.slice(0, 20); // Limit to 20 results
+    return metas.slice(0, 20);
   } catch (error) {
     console.error('TMDB discover error:', error.message, error.stack);
     return [];

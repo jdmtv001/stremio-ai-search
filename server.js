@@ -1,5 +1,4 @@
-// server.js
-require('dotenv').config(); // Load .env for local development; Render uses dashboard env vars
+require('dotenv').config();
 
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -10,19 +9,15 @@ const crypto = require('crypto');
 const admin = require('firebase-admin');
 const { getFirestore } = require('firebase-admin/firestore');
 
-// Log startup for debugging
 console.log('Starting server.js...');
 console.log('Environment Variables:', {
   firebaseConfig: process.env.__firebase_config ? 'Present' : 'Missing',
-  appId: process.env.__app_id || 'default-addon-id-for-dev',
-  port: process.env.PORT || 3000
+  appId: process.env.__app_id || 'default-addon-id-for-dev'
 });
 
-// Global variables for Firebase configuration
 const firebaseConfigRaw = process.env.__firebase_config || '{}';
 const appId = process.env.__app_id || 'default-addon-id-for-dev';
 
-// Initialize Firebase with robust error handling
 let db = null;
 try {
   const firebaseConfig = JSON.parse(firebaseConfigRaw);
@@ -37,17 +32,14 @@ try {
   }
 } catch (error) {
   console.error('Firebase Admin SDK initialization failed:', error.message, error.stack);
-  // Continue without crashing
 }
 
-// Global API Key Storage
 let currentApiKeys = {
   geminiApiKey: process.env.GEMINI_API_KEY || null,
   tmdbApiKey: process.env.TMDB_API_KEY || null,
   rpdbApiKey: process.env.RPDB_API_KEY || null,
 };
 
-// Log initial API keys
 console.log('Initial API Keys:', {
   geminiApiKey: currentApiKeys.geminiApiKey ? 'Present' : 'Missing',
   tmdbApiKey: currentApiKeys.tmdbApiKey ? 'Present' : 'Missing',
@@ -74,11 +66,10 @@ async function loadApiKeysFromFirestore() {
       currentApiKeys.rpdbApiKey = data.rpdbApiKey || currentApiKeys.rpdbApiKey;
       console.log('Global API keys loaded from Firestore.');
     } else {
-      console.log('No global API keys found in Firestore. Using environment variables.');
+      console.log('No global API keys found in Firestore.');
     }
   } catch (error) {
     console.error('Error loading global API keys from Firestore:', error.message, error.stack);
-    console.warn('Falling back to environment variables.');
   }
 }
 
@@ -89,7 +80,6 @@ loadApiKeysFromFirestore().then(() => {
 });
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -168,7 +158,7 @@ app.get('/catalog/:type/:id.json', async (req, res) => {
 
   let addon;
   try {
-    addon = require('./addon');
+    addon = require('../addon');
   } catch (error) {
     console.error('Failed to load addon.js:', error.message, error.stack);
     return res.status(500).json({ metas: [], error: 'Failed to load addon logic.' });
@@ -243,36 +233,6 @@ app.post('/save-config', async (req, res) => {
   }
 });
 
-app.get('/get-config', async (req, res) => {
-  if (!db) {
-    console.warn('Firestore not available. Returning empty config.');
-    return res.json({});
-  }
-  try {
-    const configDocRef = db.collection('artifacts').doc(appId)
-      .collection('users').doc(ADDON_CONFIG_FIRESTORE_USER_ID)
-      .collection('addon_config').doc('api_keys');
-    const docSnap = await configDocRef.get();
-
-    if (docSnap.exists) {
-      const data = docSnap.data();
-      res.json({
-        geminiApiKey: data.geminiApiKey || '',
-        tmdbApiKey: data.tmdbApiKey || '',
-        rpdbApiKey: data.rpdbApiKey || ''
-      });
-      console.log('Config retrieved from Firestore.');
-    } else {
-      res.json({});
-      console.log('No config found in Firestore.');
-    }
-  } catch (error) {
-    console.error('Error retrieving config:', error.message, error.stack);
-    res.status(500).json({ error: 'Failed to retrieve configuration.' });
-  }
-});
-
-// /configure endpoint (React frontend)
 app.get('/configure', (req, res) => {
   const firebaseConfigJson = process.env.__firebase_config ? JSON.stringify(JSON.parse(process.env.__firebase_config)) : '{}';
   const initialAuthToken = process.env.__initial_auth_token || undefined;
@@ -394,7 +354,7 @@ app.get('/configure', (req, res) => {
             const fetchInitialKeys = async () => {
               console.log('Attempting to fetch initial GLOBAL API keys from backend.');
               try {
-                const response = await fetch('/get-config');
+                const response = await fetch('/api/get-config');
                 if (response.ok) {
                   const data = await response.json();
                   setGeminiApiKey(data.geminiApiKey || '');
@@ -421,7 +381,7 @@ app.get('/configure', (req, res) => {
             setError('');
             setMessage('Saving API keys...');
             try {
-              const response = await fetch('/save-config', {
+              const response = await fetch('/api/save-config', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ geminiApiKey, tmdbApiKey, rpdbApiKey })
@@ -588,8 +548,34 @@ app.get('/configure', (req, res) => {
   res.send(htmlContent);
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-}).on('error', (error) => {
-  console.error('Server startup error:', error.message, error.stack);
+app.get('/get-config', async (req, res) => {
+  if (!db) {
+    console.warn('Firestore not available. Returning empty config.');
+    return res.json({});
+  }
+  try {
+    const configDocRef = db.collection('artifacts').doc(appId)
+      .collection('users').doc(ADDON_CONFIG_FIRESTORE_USER_ID)
+      .collection('addon_config').doc('api_keys');
+    const docSnap = await configDocRef.get();
+
+    if (docSnap.exists) {
+      const data = docSnap.data();
+      res.json({
+        geminiApiKey: data.geminiApiKey || '',
+        tmdbApiKey: data.tmdbApiKey || '',
+        rpdbApiKey: data.rpdbApiKey || ''
+      });
+      console.log('Config retrieved from Firestore.');
+    } else {
+      res.json({});
+      console.log('No config found in Firestore.');
+    }
+  } catch (error) {
+    console.error('Error retrieving config:', error.message, error.stack);
+    res.status(500).json({ error: 'Failed to retrieve configuration.' });
+  }
 });
+
+// Export the app for Vercel serverless
+module.exports = app;

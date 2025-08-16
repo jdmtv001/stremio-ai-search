@@ -1,0 +1,39 @@
+{
+  "version": 2,
+  "functions": {
+    "api/server.js": {
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/manifest.json",
+      "destination": "/api/server"
+    },
+    {
+      "source": "/catalog/:type/:id.json",
+      "destination": "/api/server"
+    },
+    {
+      "source": "/meta/:type/:imdb_id.json",
+      "destination": "/api/server"
+    },
+    {
+      "source": "/configure",
+      "destination": "/api/server"
+    },
+    {
+      "source": "/save-config",
+      "destination": "/api/server"
+    },
+    {
+      "source": "/get-config",
+      "destination": "/api/server"
+    },
+    {
+      "source": "/",
+      "destination": "/api/server"
+    }
+  ]
+}
