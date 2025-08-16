@@ -1,39 +1,34 @@
 {
   "version": 2,
-  "functions": {
-    "api/server.js": {
-      "memory": 1024,
-      "maxDuration": 30
-    }
-  },
+  "cleanUrls": true,
   "rewrites": [
     {
       "source": "/manifest.json",
-      "destination": "/api/server"
+      "destination": "/api/server.js"
     },
     {
       "source": "/catalog/:type/:id.json",
-      "destination": "/api/server"
+      "destination": "/api/server.js"
     },
     {
       "source": "/meta/:type/:imdb_id.json",
-      "destination": "/api/server"
+      "destination": "/api/server.js"
     },
     {
       "source": "/configure",
-      "destination": "/api/server"
+      "destination": "/api/server.js"
     },
     {
       "source": "/save-config",
-      "destination": "/api/server"
+      "destination": "/api/server.js"
     },
     {
       "source": "/get-config",
-      "destination": "/api/server"
+      "destination": "/api/server.js"
     },
     {
       "source": "/",
-      "destination": "/api/server"
+      "destination": "/api/server.js"
     }
   ]
 }

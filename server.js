@@ -158,7 +158,7 @@ app.get('/catalog/:type/:id.json', async (req, res) => {
 
   let addon;
   try {
-    addon = require('../addon');
+    addon = require('../addon.js');
   } catch (error) {
     console.error('Failed to load addon.js:', error.message, error.stack);
     return res.status(500).json({ metas: [], error: 'Failed to load addon logic.' });
@@ -230,6 +230,35 @@ app.post('/save-config', async (req, res) => {
   } catch (error) {
     console.error('Error saving API keys:', error.message, error.stack);
     res.status(500).json({ error: 'Failed to save API keys.' });
+  }
+});
+
+app.get('/get-config', async (req, res) => {
+  if (!db) {
+    console.warn('Firestore not available. Returning empty config.');
+    return res.json({});
+  }
+  try {
+    const configDocRef = db.collection('artifacts').doc(appId)
+      .collection('users').doc(ADDON_CONFIG_FIRESTORE_USER_ID)
+      .collection('addon_config').doc('api_keys');
+    const docSnap = await configDocRef.get();
+
+    if (docSnap.exists) {
+      const data = docSnap.data();
+      res.json({
+        geminiApiKey: data.geminiApiKey || '',
+        tmdbApiKey: data.tmdbApiKey || '',
+        rpdbApiKey: data.rpdbApiKey || ''
+      });
+      console.log('Config retrieved from Firestore.');
+    } else {
+      res.json({});
+      console.log('No config found in Firestore.');
+    }
+  } catch (error) {
+    console.error('Error retrieving config:', error.message, error.stack);
+    res.status(500).json({ error: 'Failed to retrieve configuration.' });
   }
 });
 
@@ -548,34 +577,4 @@ app.get('/configure', (req, res) => {
   res.send(htmlContent);
 });
 
-app.get('/get-config', async (req, res) => {
-  if (!db) {
-    console.warn('Firestore not available. Returning empty config.');
-    return res.json({});
-  }
-  try {
-    const configDocRef = db.collection('artifacts').doc(appId)
-      .collection('users').doc(ADDON_CONFIG_FIRESTORE_USER_ID)
-      .collection('addon_config').doc('api_keys');
-    const docSnap = await configDocRef.get();
-
-    if (docSnap.exists) {
-      const data = docSnap.data();
-      res.json({
-        geminiApiKey: data.geminiApiKey || '',
-        tmdbApiKey: data.tmdbApiKey || '',
-        rpdbApiKey: data.rpdbApiKey || ''
-      });
-      console.log('Config retrieved from Firestore.');
-    } else {
-      res.json({});
-      console.log('No config found in Firestore.');
-    }
-  } catch (error) {
-    console.error('Error retrieving config:', error.message, error.stack);
-    res.status(500).json({ error: 'Failed to retrieve configuration.' });
-  }
-});
-
-// Export the app for Vercel serverless
 module.exports = app;

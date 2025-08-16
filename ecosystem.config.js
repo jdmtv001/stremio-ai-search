@@ -4,7 +4,7 @@ module.exports = {
   apps: [
     {
       name: 'stremio-ai-addon',
-      script: './server.js',
+      script: './api/server.js',
       cwd: '.',
       env: {
         NODE_ENV: 'production',
